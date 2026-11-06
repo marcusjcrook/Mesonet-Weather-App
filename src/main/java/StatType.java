@@ -10,8 +10,5 @@ public enum StatType
     MAX,
 
     /** the average constant */
-    AVG,
-
-    /** the total constant */
-    TOT;
+    AVG
 }

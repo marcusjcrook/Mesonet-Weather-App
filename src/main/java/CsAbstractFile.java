@@ -1,8 +1,12 @@
 import java.io.File;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.util.Locale;
 
 /**
  * Abstract File class
@@ -12,11 +16,9 @@ public abstract class CsAbstractFile implements TimeComparable
     /** A File object */
     protected File file;
 
-    /** a DateFormat object */
-    protected DateFormat dateFormat;
-
-    /** time format used for strings */
-    protected static String dateTimeFormat = "yyyy-MM-dd'T'HH:mm:ss z";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("uuuu-MM-dd'T'HH:mm:ss 'UTC'", Locale.ROOT)
+            .withResolverStyle(ResolverStyle.STRICT);
 
     /** a String representing the file name */
     protected String fileName;
@@ -31,9 +33,26 @@ public abstract class CsAbstractFile implements TimeComparable
     {
         // assign inFileName to a the fileName field
         fileName = inFileName;
-        dateFormat = new SimpleDateFormat(dateTimeFormat);
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         file = new File(inFileName);
+    }
+
+    static Instant parseUtcDateTime(String dateTime) throws ParseException
+    {
+        try
+        {
+            return LocalDateTime.parse(dateTime, DATE_TIME_FORMATTER).toInstant(ZoneOffset.UTC);
+        }
+        catch (DateTimeParseException ex)
+        {
+            ParseException parseException = new ParseException(ex.getMessage(), ex.getErrorIndex());
+            parseException.initCause(ex);
+            throw parseException;
+        }
+    }
+
+    static String formatUtcDateTime(Instant dateTime)
+    {
+        return DATE_TIME_FORMATTER.withZone(ZoneOffset.UTC).format(dateTime);
     }
 
     /**

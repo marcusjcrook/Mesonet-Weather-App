@@ -1,8 +1,5 @@
 import java.text.ParseException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
+import java.time.Instant;
 
 /**
  * Class that extends CsAbstractFile. Provides methods to compare files
@@ -46,7 +43,7 @@ public class CsFile extends CsAbstractFile
      */
     public boolean newerThan(String inDateTime) throws ParseException
     {
-        return compareWithTimeString(inDateTime) == 1 ? true : false;
+        return compareWithTimeString(inDateTime) > 0;
     }
 
     /*
@@ -64,7 +61,7 @@ public class CsFile extends CsAbstractFile
      */
     public boolean olderThan(String inDateTime) throws ParseException
     {
-        return compareWithTimeString(inDateTime) == -1 ? true : false;
+        return compareWithTimeString(inDateTime) < 0;
     }
 
     /*
@@ -85,25 +82,6 @@ public class CsFile extends CsAbstractFile
     @Override
     public int compareWithTimeString(String inDateTime) throws ParseException
     {
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Date stringToDate = dateFormat.parse(inDateTime);
-        Calendar cal = new GregorianCalendar();
-        cal.setTimeZone(TimeZone.getTimeZone("UTC"));
-        cal.setTimeInMillis(this.getDateModified());
-
-        int value = cal.getTime().compareTo(stringToDate);
-
-        if (value > 0)
-        {
-            return 1;
-        }
-        else if (value < 0)
-        {
-            return -1;
-        }
-        else
-        {
-            return 0;
-        }
+        return Instant.ofEpochMilli(getDateModified()).compareTo(parseUtcDateTime(inDateTime));
     }
 }

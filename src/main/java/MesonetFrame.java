@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -13,6 +14,8 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * Class to create frame for displaying Mesonet data
@@ -124,42 +127,100 @@ public class MesonetFrame extends JFrame
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            String result = new String("");
             String statString = statistics.getStatisticsType();
             ArrayList<String> paramType = parameters.getParamIds();
             ArrayList<String> files = fileMenuBar.getFileList();
-            String[] fileArray = new String[1];
-            fileArray = files.toArray(fileArray);
-            int exceptionIndex = 0;
+            String[] fileArray = files.toArray(new String[0]);
 
-            try
+            if (files.isEmpty())
             {
-                DaysStatistics days = new DaysStatistics(fileArray);
-                days.findStatistics();
+                JOptionPane.showMessageDialog(MesonetFrame.this, "Select at least one data file.");
+                return;
+            }
+            if (paramType.isEmpty())
+            {
+                JOptionPane.showMessageDialog(MesonetFrame.this, "Select at least one parameter.");
+                return;
+            }
 
-                // loop through the parameter ArrayList and print information
-                for (int parameterIndex = 0; parameterIndex < paramType.size(); parameterIndex++)
+            calcButton.setEnabled(false);
+            calcButton.setText("Calculating...");
+
+            new SwingWorker<List<StatMeasurement>, Void>()
+            {
+                @Override
+                protected List<StatMeasurement> doInBackground() throws Exception
                 {
-                    if (statString.equals("MAXIMUM"))
+                    ArrayList<StatMeasurement> result = new ArrayList<>();
+                    DaysStatistics days = new DaysStatistics(fileArray);
+                    days.findStatistics();
+
+                    for (String parameter : paramType)
                     {
-                        result += days.getMaximumDay(paramType.get(parameterIndex)).toString() + "\n";
+                        if (statString.equals("MAXIMUM"))
+                        {
+                            result.add(days.getMaximumDay(parameter));
+                        }
+                        else if (statString.equals("MINIMUM"))
+                        {
+                            result.add(days.getMinimumDay(parameter));
+                        }
+                        else if (statString.equals("AVERAGE"))
+                        {
+                            result.addAll(days.getAverageDays(parameter));
+                        }
                     }
-                    else if (statString.equals("MINIMUM"))
-                    {
-                        result += days.getMinimumDay(paramType.get(parameterIndex)).toString() + "\n";
-                    }
-                    exceptionIndex++;
+                    return result;
                 }
-                System.out.println(fileMenuBar.getFileList());
-            }
-            catch (Exception e1)
-            {
-                // for debugging
-                JOptionPane.showMessageDialog(null, "Should display what is calculated for " + statString + " "
-                        + paramType.get(exceptionIndex).toString() + " result: " + result);
-                e1.printStackTrace();
-            }
-            MesonetFrame.this.dataPanel.updateData(result);
+
+                @Override
+                protected void done()
+                {
+                    try
+                    {
+                        List<StatMeasurement> result = get();
+                        dataPanel.updateData(result);
+                        ArrayList<String> parametersWithoutReadings = new ArrayList<>();
+                        for (String parameter : paramType)
+                        {
+                            if (result.stream().filter(measurement -> measurement.getParamId().equalsIgnoreCase(parameter))
+                                    .noneMatch(StatMeasurement::isValid))
+                            {
+                                parametersWithoutReadings.add(parameter);
+                            }
+                        }
+                        if (!parametersWithoutReadings.isEmpty())
+                        {
+                            JOptionPane.showMessageDialog(MesonetFrame.this,
+                                    "No usable readings were found for " + String.join(", ", parametersWithoutReadings)
+                                            + ". Results for these parameters are marked \"bad\".",
+                                    "No usable readings", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        Thread.currentThread().interrupt();
+                        JOptionPane.showMessageDialog(MesonetFrame.this,
+                                "The " + statString.toLowerCase() + " calculation was interrupted. Please try again.",
+                                "Calculation interrupted", JOptionPane.ERROR_MESSAGE);
+                    }
+                    catch (java.util.concurrent.ExecutionException ex)
+                    {
+                        Throwable cause = ex.getCause();
+                        String message = cause.getMessage() == null ? cause.toString() : cause.getMessage();
+                        JOptionPane.showMessageDialog(MesonetFrame.this,
+                                "Could not calculate " + statString.toLowerCase() + ".\n\n" + message
+                                        + "\n\nCheck that the selected files exist, are readable Mesonet .mts files, "
+                                        + "and contain the required headers and data rows.",
+                                "Data file error", JOptionPane.ERROR_MESSAGE);
+                    }
+                    finally
+                    {
+                        calcButton.setText("Calculate");
+                        calcButton.setEnabled(true);
+                    }
+                }
+            }.execute();
         }
     }
 
@@ -217,8 +278,9 @@ public class MesonetFrame extends JFrame
             });
 
             // Create the file chooser
-            fileChooser = new JFileChooser(new File("./data/mesonet"));
+            fileChooser = new JFileChooser(DataDirectory.findInitialDirectory(MesonetFrame.class).toFile());
             fileChooser.setMultiSelectionEnabled(true);
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Mesonet data files (*.mts)", "mts"));
 
             // Action listener for file open
             menuOpen.addActionListener(new ActionListener()
@@ -232,26 +294,11 @@ public class MesonetFrame extends JFrame
                     {
                         // Yes
                         File[] files = fileChooser.getSelectedFiles();
-                        // System.out.println(files.length);
-                        try
+                        listOfFiles.clear();
+                        for (File file : files)
                         {
-                            for (File file : files)
-                            {
-                                String fileName = file.toString();
-                                System.out.println(fileName);
-                                listOfFiles.add(fileName);
-                            }
+                            listOfFiles.add(file.getPath());
                         }
-                        catch (Exception e2)
-                        {
-                            // Catch all other exceptions
-                            JOptionPane.showMessageDialog(fileChooser, "File load error");
-                            MesonetFrame.this.setCursor(null);
-                        }
-                    }
-                    else
-                    {
-                        System.out.println("No files.");
                     }
                 }
             });
@@ -264,16 +311,7 @@ public class MesonetFrame extends JFrame
          */
         public ArrayList<String> getFileList()
         {
-            String[] temp = new String[1];
-            ArrayList<String> result = new ArrayList<String>();
-
-            // to only keep first file name in ArrayList
-            for (int index = 0; index < listOfFiles.size(); ++index)
-            {
-                temp[0] = listOfFiles.get(index);
-            }
-            result.add(temp[0]);
-            return result;
+            return new ArrayList<String>(listOfFiles);
         }
     }
 }

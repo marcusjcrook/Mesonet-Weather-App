@@ -18,11 +18,17 @@ public class StatisticsPanel extends JPanel
     /** a string constant for min */
     public final String MIN_BUTTON = "MINIMUM";
 
+    /** a string constant for average */
+    public final String AVG_BUTTON = "AVERAGE";
+
     /** a JRadioButton for the maximum */
     private JRadioButton maxButton;
 
     /** a JRadioButton for the minimum */
     private JRadioButton minButton;
+
+    /** a JRadioButton for the average */
+    private JRadioButton avgButton;
 
     /** a button group for the buttons */
     private ButtonGroup bg;
@@ -39,6 +45,7 @@ public class StatisticsPanel extends JPanel
         // create the buttons and button group
         minButton = new JRadioButton(MIN_BUTTON);
         maxButton = new JRadioButton(MAX_BUTTON);
+        avgButton = new JRadioButton(AVG_BUTTON);
         minButton.setSelected(true);
         bg = new ButtonGroup();
 
@@ -48,8 +55,10 @@ public class StatisticsPanel extends JPanel
         // add the buttons to the panel and button group
         add(minButton);
         add(maxButton);
+        add(avgButton);
         bg.add(minButton);
         bg.add(maxButton);
+        bg.add(avgButton);
     }
 
     /** Method to get stattype */
@@ -65,6 +74,10 @@ public class StatisticsPanel extends JPanel
         else if (maxButton.isSelected())
         {
             result = MAX_BUTTON;
+        }
+        else if (avgButton.isSelected())
+        {
+            result = AVG_BUTTON;
         }
         return result;
     }

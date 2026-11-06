@@ -1,14 +1,12 @@
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 
 /**
  * Class for assigning day data statistics. Creates ArrayLists for all the
- * maximum, minimum, average, and totals, storing them in the lists. Provides
+ * maximum, minimum, and average, storing them in the lists. Provides
  * methods to find the maximum and minimum of a particular data (e.g. Tair
  * Minimum).
  */
@@ -57,7 +55,6 @@ public class DaysStatistics extends StatisticsAbstract
         sradList.get("SRAD").put(StatType.MAX, new ArrayList<StatMeasurement>());
         sradList.get("SRAD").put(StatType.MIN, new ArrayList<StatMeasurement>());
         sradList.get("SRAD").put(StatType.AVG, new ArrayList<StatMeasurement>());
-        sradList.get("SRAD").put(StatType.TOT, new ArrayList<StatMeasurement>());
     }
 
     /**
@@ -65,14 +62,12 @@ public class DaysStatistics extends StatisticsAbstract
      * 
      * @throws IOException
      * @throws WrongCopyrightException
-     * @throws ParseException
      */
-    public void findStatistics() throws IOException, WrongCopyrightException, ParseException
+    public void findStatistics() throws IOException, WrongCopyrightException
     {
         for (String fileName : files)
         {
             MesonetTimeFile mtsFile = new MesonetTimeFile(fileName);
-            mtsFile.parseFile();
             ArrayList<TimeData> data = mtsFile.parseFile();
             DayDataStatistics dataStats = new DayDataStatistics(data);
 
@@ -85,9 +80,8 @@ public class DaysStatistics extends StatisticsAbstract
      * 
      * @param dataStats
      *            a DayDataStatics Object
-     * @throws ParseException
      */
-    private void assignStats(DayDataStatistics dataStats) throws ParseException
+    private void assignStats(DayDataStatistics dataStats)
     {
         // assign the stats to the appropriate ArrayList
         tairList.get("TAIR").get(StatType.MAX).add(dataStats.getStatMeasurement("Tair", StatType.MAX));
@@ -101,7 +95,37 @@ public class DaysStatistics extends StatisticsAbstract
         sradList.get("SRAD").get(StatType.MAX).add(dataStats.getStatMeasurement("Srad", StatType.MAX));
         sradList.get("SRAD").get(StatType.MIN).add(dataStats.getStatMeasurement("Srad", StatType.MIN));
         sradList.get("SRAD").get(StatType.AVG).add(dataStats.getStatMeasurement("Srad", StatType.AVG));
-        sradList.get("SRAD").get(StatType.AVG).add(dataStats.getStatMeasurement("Srad", StatType.TOT));
+    }
+
+    /**
+     * Returns the daily average measurements for a parameter across the loaded files.
+     *
+     * @param inParamId the parameter ID
+     * @return the daily average measurements
+     * @throws WrongParameterIdException if the parameter ID is unsupported
+     */
+    public ArrayList<StatMeasurement> getAverageDays(String inParamId) throws WrongParameterIdException
+    {
+        return getDailyStatistics(inParamId, StatType.AVG);
+    }
+
+    private ArrayList<StatMeasurement> getDailyStatistics(String inParamId, StatType statType)
+            throws WrongParameterIdException
+    {
+        if (inParamId.equalsIgnoreCase("tair"))
+        {
+            return new ArrayList<StatMeasurement>(tairList.get("TAIR").get(statType));
+        }
+        else if (inParamId.equalsIgnoreCase("ta9m"))
+        {
+            return new ArrayList<StatMeasurement>(ta9mList.get("TA9M").get(statType));
+        }
+        else if (inParamId.equalsIgnoreCase("srad"))
+        {
+            return new ArrayList<StatMeasurement>(sradList.get("SRAD").get(statType));
+        }
+
+        throw new WrongParameterIdException(inParamId);
     }
 
     /*
@@ -120,23 +144,7 @@ public class DaysStatistics extends StatisticsAbstract
     @Override
     public StatMeasurement getMinimumDay(String inParamId) throws WrongParameterIdException
     {
-        if (inParamId.equalsIgnoreCase("tair"))
-        {
-            return Collections.min(tairList.get("TAIR").get(StatType.MIN));
-        }
-        else if (inParamId.equalsIgnoreCase("ta9m"))
-        {
-            return Collections.min(ta9mList.get("TA9M").get(StatType.MIN));
-        }
-        else if (inParamId.equalsIgnoreCase("srad"))
-        {
-            return Collections.min(sradList.get("SRAD").get(StatType.MIN));
-        }
-        else
-        {
-            String msg = String.format("%s", inParamId);
-            throw new WrongParameterIdException(msg);
-        }
+        return getExtremeDay(inParamId, StatType.MIN);
     }
 
     /*
@@ -155,23 +163,34 @@ public class DaysStatistics extends StatisticsAbstract
     @Override
     public StatMeasurement getMaximumDay(String inParamId) throws WrongParameterIdException
     {
-        if (inParamId.equalsIgnoreCase("tair"))
+        return getExtremeDay(inParamId, StatType.MAX);
+    }
+
+    private StatMeasurement getExtremeDay(String inParamId, StatType statType) throws WrongParameterIdException
+    {
+        ArrayList<StatMeasurement> measurements = getDailyStatistics(inParamId, statType);
+        if (measurements.isEmpty())
         {
-            return Collections.max(tairList.get("TAIR").get(StatType.MAX));
+            throw new IllegalStateException("No daily statistics are available for " + inParamId + ".");
         }
-        else if (inParamId.equalsIgnoreCase("ta9m"))
+
+        StatMeasurement extreme = null;
+        for (StatMeasurement measurement : measurements)
         {
-            return Collections.max(ta9mList.get("TA9M").get(StatType.MAX));
+            if (measurement.isValid()
+                    && (extreme == null || (statType == StatType.MIN
+                            ? measurement.compareTo(extreme) < 0
+                            : measurement.compareTo(extreme) > 0)))
+            {
+                extreme = measurement;
+            }
         }
-        else if (inParamId.equalsIgnoreCase("srad"))
+
+        if (extreme != null)
         {
-            return Collections.max(sradList.get("SRAD").get(StatType.MAX));
+            return extreme;
         }
-        else
-        {
-            String msg = String.format("%s", inParamId);
-            throw new WrongParameterIdException(msg);
-        }
+        return measurements.get(0);
     }
 
     /**

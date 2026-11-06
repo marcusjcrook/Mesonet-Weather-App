@@ -1,10 +1,5 @@
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.GregorianCalendar;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.Instant;
 
 /**
  * A class for holding statistic measurement objects. Provides methods for
@@ -13,7 +8,7 @@ import java.util.TimeZone;
 public class StatMeasurement extends Measurement implements TimeComparable, Comparable<StatMeasurement>
 {
     /** a variable for holding the date and time of measurement */
-    private GregorianCalendar dateTimeOfMeasurment;
+    private Instant dateTimeOfMeasurement = Instant.EPOCH;
 
     /** a variable for holding the parameter Id */
     private String paramId;
@@ -52,20 +47,11 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
      * @param inStatType
      *            the statistic type
      */
-    public StatMeasurement(double inValue, GregorianCalendar obsDateTime, String inStationId, String inParamId,
+    public StatMeasurement(double inValue, Instant obsDateTime, String inStationId, String inParamId,
             StatType inStatType)
     {
         super(inValue);
-
-        dateTimeOfMeasurment = new GregorianCalendar(0, 0, 0);
-        int year = obsDateTime.get(Calendar.YEAR);
-        int month = obsDateTime.get(Calendar.MONTH) - 1;
-        int day = obsDateTime.get(Calendar.DAY_OF_MONTH);
-        int hour = obsDateTime.get(Calendar.HOUR_OF_DAY);
-        int minute = obsDateTime.get(Calendar.MINUTE);
-
-        dateTimeOfMeasurment.set(year, month, day, hour, minute, 0);
-        dateTimeOfMeasurment.setTimeZone(TimeZone.getTimeZone("UTC"));
+        dateTimeOfMeasurement = obsDateTime;
         stationId = inStationId;
         paramId = inParamId;
         statType = inStatType;
@@ -74,12 +60,11 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
     /**
      * method for getting the date and time of measurement
      * 
-     * @return GregorianCalendar a calendar object holding the date and time of
-     *         measurement
+     * @return the UTC instant of the measurement
      */
-    public GregorianCalendar getDateTimeOfMeasurment()
+    public Instant getDateTimeOfMeasurement()
     {
-        return dateTimeOfMeasurment;
+        return dateTimeOfMeasurement;
     }
 
     /**
@@ -101,6 +86,11 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
     public String getParamId()
     {
         return paramId;
+    }
+
+    public String getStationId()
+    {
+        return stationId;
     }
 
     /**
@@ -195,7 +185,7 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
      */
     public boolean newerThan(String inDateTime) throws ParseException
     {
-        return compareWithTimeString(inDateTime) == 1 ? true : false;
+        return compareWithTimeString(inDateTime) > 0;
     }
 
     /*
@@ -213,7 +203,7 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
      */
     public boolean olderThan(String inDateTime) throws ParseException
     {
-        return compareWithTimeString(inDateTime) == -1 ? true : false;
+        return compareWithTimeString(inDateTime) < 0;
     }
 
     /**
@@ -228,23 +218,7 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
      */
     public int compareWithTimeString(String inDateTime) throws ParseException
     {
-        DateFormat format = new SimpleDateFormat(CsAbstractFile.dateTimeFormat);
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Date dateString = format.parse(inDateTime);
-        int value = dateTimeOfMeasurment.getTime().compareTo(dateString);
-
-        if (value > 0)
-        {
-            return 1;
-        }
-        else if (value < 0)
-        {
-            return -1;
-        }
-        else
-        {
-            return 0;
-        }
+        return dateTimeOfMeasurement.compareTo(CsAbstractFile.parseUtcDateTime(inDateTime));
     }
 
     /*
@@ -260,10 +234,8 @@ public class StatMeasurement extends Measurement implements TimeComparable, Comp
     @Override
     public String toString()
     {
-        DateFormat format = new SimpleDateFormat(CsAbstractFile.dateTimeFormat);
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        String date = format.format(dateTimeOfMeasurment.getTime());
-        return String.format("%s %s %.4f %s %s", paramId.toUpperCase(), this.statType, this.value,
+        String date = CsAbstractFile.formatUtcDateTime(dateTimeOfMeasurement);
+        return String.format("%s %s %s %s %s", paramId.toUpperCase(), this.statType, super.toString(),
                 stationId.toUpperCase(), date);
     }
 

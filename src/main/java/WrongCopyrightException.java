@@ -16,4 +16,14 @@ public class WrongCopyrightException extends Exception
     {
         super("Invalid copyright detected");
     }
+
+    /**
+     * Constructor for a copyright exception with additional context.
+     *
+     * @param message the detailed error message
+     */
+    public WrongCopyrightException(String message)
+    {
+        super(message);
+    }
 }

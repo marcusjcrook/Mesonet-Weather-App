@@ -1,6 +1,7 @@
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test class for Measurement class
@@ -25,7 +26,7 @@ public class MeasurementTest
     /**
      * @throws java.lang.Exception
      */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         goodValue = 10; // A valid value.
@@ -41,8 +42,8 @@ public class MeasurementTest
     {
         Measurement noParameterMeasure = new Measurement();
 
-        Assert.assertEquals("Incorrect value returned!", Double.NaN, noParameterMeasure.getValue(), 0.001);
-        Assert.assertFalse("Incorrect boolean returned!", noParameterMeasure.isValid());
+        assertEquals(Double.NaN, noParameterMeasure.getValue(), 0.001, "Incorrect value returned!");
+        assertFalse(noParameterMeasure.isValid(), "Incorrect boolean returned!");
     }
 
     /**
@@ -53,8 +54,8 @@ public class MeasurementTest
     {
         Measurement parameterMeasure = new Measurement(goodValue);
 
-        Assert.assertEquals("Incorrect value returned!", 10, parameterMeasure.getValue(), 0.001);
-        Assert.assertTrue("Incorrect boolean returned!", parameterMeasure.isValid());
+        assertEquals(10, parameterMeasure.getValue(), 0.001, "Incorrect value returned!");
+        assertTrue(parameterMeasure.isValid(), "Incorrect boolean returned!");
     }
 
     /**
@@ -66,7 +67,7 @@ public class MeasurementTest
         goodMeasurement = new Measurement(goodValue);
         boolean actual = goodMeasurement.isValid();
 
-        Assert.assertTrue(actual);
+        assertTrue(actual);
     }
 
     /**
@@ -78,7 +79,7 @@ public class MeasurementTest
         Measurement badMeasurement = new Measurement(badValue);
         boolean actual = badMeasurement.isValid();
 
-        Assert.assertFalse("Incorrect boolean returned!", actual);
+        assertFalse(actual, "Incorrect boolean returned!");
     }
 
     /**
@@ -90,7 +91,7 @@ public class MeasurementTest
         goodMeasurement = new Measurement(goodValue);
         double actual = goodMeasurement.getValue();
 
-        Assert.assertEquals("Incorrect value returned!", 10, actual, 0.01);
+        assertEquals(10, actual, 0.01, "Incorrect value returned!");
     }
 
     /**
@@ -103,13 +104,13 @@ public class MeasurementTest
         String actual = goodMeasurement.toString();
         String expected = "10.0000";
 
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
 
         Measurement badMeasurement = new Measurement(badValue);
 
         actual = badMeasurement.toString();
         expected = "bad";
 
-        Assert.assertEquals("Incorrect string returned!", expected, actual);
+        assertEquals(expected, actual, "Incorrect string returned!");
     }
 }

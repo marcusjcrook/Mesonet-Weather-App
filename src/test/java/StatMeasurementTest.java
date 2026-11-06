@@ -1,13 +1,10 @@
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
+import java.time.Instant;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test class for StatMeasurement
@@ -18,7 +15,7 @@ public class StatMeasurementTest
     private static final String NADA = "nada";
 
     /** a variable for holding the date */
-    private GregorianCalendar date;
+    private Instant date;
 
     /** a variable for holding the parameter ID */
     private String paramId;
@@ -34,18 +31,10 @@ public class StatMeasurementTest
      * 
      * @throws Exception
      */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        // initialize the variables
-        date = new GregorianCalendar();
-        date.set(Calendar.YEAR, 2018);
-        date.set(Calendar.MONTH, 2);
-        date.set(Calendar.DAY_OF_MONTH, 19);
-        date.set(Calendar.MINUTE, 15);
-        date.set(Calendar.HOUR_OF_DAY, 0);
-        date.set(Calendar.SECOND, 0);
-        date.set(Calendar.MILLISECOND, 0);
+        date = Instant.parse("2018-02-19T00:15:00Z");
         paramId = "TEST";
         statType = StatType.MAX;
         stationId = "STATION";
@@ -59,9 +48,9 @@ public class StatMeasurementTest
     {
         StatMeasurement stat1 = new StatMeasurement();
 
-        Assert.assertEquals("Incorrect value returned!", Double.NaN, stat1.getValue(), 0.001);
-        Assert.assertFalse(stat1.isValid());
-        Assert.assertEquals("Incorrect parameter ID returned!", NADA, stat1.getParamId());
+        assertEquals(Double.NaN, stat1.getValue(), 0.001, "Incorrect value returned!");
+        assertFalse(stat1.isValid());
+        assertEquals(NADA, stat1.getParamId(), "Incorrect parameter ID returned!");
     }
 
     /**
@@ -72,10 +61,10 @@ public class StatMeasurementTest
     {
         StatMeasurement stat = new StatMeasurement(2.5, date, stationId, paramId, statType);
 
-        Assert.assertEquals("Incorrect value returned!", 2.5, stat.getValue(), 0.001);
-        Assert.assertTrue(stat.isValid());
-        Assert.assertEquals("Incorrect parameter ID returned!", "TEST", stat.getParamId());
-        Assert.assertEquals("Incorrect statistic type returned!", StatType.MAX, stat.getStatType());
+        assertEquals(2.5, stat.getValue(), 0.001, "Incorrect value returned!");
+        assertTrue(stat.isValid());
+        assertEquals("TEST", stat.getParamId(), "Incorrect parameter ID returned!");
+        assertEquals(StatType.MAX, stat.getStatType(), "Incorrect statistic type returned!");
     }
 
     /**
@@ -89,14 +78,12 @@ public class StatMeasurementTest
         stat.setStatType(StatType.MIN);
         stat.setParamId("PASS");
 
-        Assert.assertEquals("Incorrect parameter ID returned!", "PASS", stat.getParamId());
-        Assert.assertEquals("Incorrect statistic type returned!", StatType.MIN, stat.getStatType());
+        assertEquals("PASS", stat.getParamId(), "Incorrect parameter ID returned!");
+        assertEquals(StatType.MIN, stat.getStatType(), "Incorrect statistic type returned!");
 
         stat.setStatType(StatType.AVG);
-        Assert.assertEquals("Incorrect statistic type returned!", StatType.AVG, stat.getStatType());
+        assertEquals(StatType.AVG, stat.getStatType(), "Incorrect statistic type returned!");
 
-        stat.setStatType(StatType.TOT);
-        Assert.assertEquals("Incorrect statistic type returned!", StatType.TOT, stat.getStatType());
     }
 
     /**
@@ -109,10 +96,10 @@ public class StatMeasurementTest
         StatMeasurement stat2 = new StatMeasurement(2.5, date, stationId, paramId, statType);
         StatMeasurement stat3 = new StatMeasurement(-901, date, stationId, paramId, statType);
 
-        Assert.assertTrue("Incorrect boolean returned!", stat1.isLessThan(stat2));
-        Assert.assertFalse("Incorrect boolean returned!", stat2.isLessThan(stat1));
-        Assert.assertTrue("Incorrect boolean returned!", stat1.isLessThan(stat3));
-        Assert.assertFalse("Incorrect boolean returned!", stat3.isLessThan(stat3));
+        assertTrue(stat1.isLessThan(stat2), "Incorrect boolean returned!");
+        assertFalse(stat2.isLessThan(stat1), "Incorrect boolean returned!");
+        assertTrue(stat1.isLessThan(stat3), "Incorrect boolean returned!");
+        assertFalse(stat3.isLessThan(stat3), "Incorrect boolean returned!");
     }
 
     /**
@@ -125,10 +112,10 @@ public class StatMeasurementTest
         StatMeasurement stat2 = new StatMeasurement(2.5, date, stationId, paramId, statType);
         StatMeasurement stat3 = new StatMeasurement(-901, date, stationId, paramId, statType);
 
-        Assert.assertFalse("Incorrect boolean returned!", stat1.isGreaterThan(stat2));
-        Assert.assertTrue("Incorrect boolean returned!", stat2.isGreaterThan(stat1));
-        Assert.assertTrue("Incorrect boolean returned!", stat1.isGreaterThan(stat3));
-        Assert.assertFalse("Incorrect boolean returned!", stat3.isGreaterThan(stat3));
+        assertFalse(stat1.isGreaterThan(stat2), "Incorrect boolean returned!");
+        assertTrue(stat2.isGreaterThan(stat1), "Incorrect boolean returned!");
+        assertTrue(stat1.isGreaterThan(stat3), "Incorrect boolean returned!");
+        assertFalse(stat3.isGreaterThan(stat3), "Incorrect boolean returned!");
     }
 
     /** Method to test the compareWithTimeString method */
@@ -140,23 +127,37 @@ public class StatMeasurementTest
         int actual = stat.compareWithTimeString(inDate);
         int expected = 0;
 
-        Assert.assertEquals("Check your date, fool!", expected, actual);
-        Assert.assertFalse("Incorrect boolean returned!", stat.newerThan(inDate));
-        Assert.assertFalse("Incorrect boolean returned!", stat.olderThan(inDate));
+        assertEquals(expected, actual, "Check your date, fool!");
+        assertFalse(stat.newerThan(inDate), "Incorrect boolean returned!");
+        assertFalse(stat.olderThan(inDate), "Incorrect boolean returned!");
 
         inDate = "2018-03-19T00:15:00 UTC";
         actual = stat.compareWithTimeString(inDate);
         expected = -1;
 
-        Assert.assertEquals("Check your date, fool!", expected, actual);
-        Assert.assertTrue("Incorrect boolean returned!", stat.olderThan(inDate));
+        assertEquals(expected, actual, "Check your date, fool!");
+        assertTrue(stat.olderThan(inDate), "Incorrect boolean returned!");
 
         inDate = "2018-02-19T00:10:00 UTC";
         actual = stat.compareWithTimeString(inDate);
         expected = 1;
 
-        Assert.assertEquals("Check your date, fool!", expected, actual);
-        Assert.assertTrue("Incorrect boolean returned!", stat.newerThan(inDate));
+        assertEquals(expected, actual, "Check your date, fool!");
+        assertTrue(stat.newerThan(inDate), "Incorrect boolean returned!");
+    }
+
+    @Test
+    public void utcDateTimeParserRejectsInvalidCalendarDates()
+    {
+        try
+        {
+            CsAbstractFile.parseUtcDateTime("2018-02-30T00:15:00 UTC");
+            fail("Expected invalid date to be rejected.");
+        }
+        catch (ParseException expected)
+        {
+            assertNotNull(expected.getCause());
+        }
     }
 
     /** Method to test toString() */
@@ -167,7 +168,7 @@ public class StatMeasurementTest
         String expected = "TEST MAX 31.0000 STATION 2018-02-19T00:15:00 UTC";
         String actual = stat.toString();
 
-        Assert.assertEquals("Check your string, fool!", expected, actual);
+        assertEquals(expected, actual, "Check your string, fool!");
     }
 
     /** Method to test getDateTimeOfMeasurement() method */
@@ -175,12 +176,9 @@ public class StatMeasurementTest
     public void testGetDateTimeOfMeasurement()
     {
         StatMeasurement stat = new StatMeasurement(31, date, stationId, paramId, statType);
-        DateFormat format = new SimpleDateFormat(CsAbstractFile.dateTimeFormat);
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-        String actual = format.format(stat.getDateTimeOfMeasurment().getTime());
+        String actual = CsAbstractFile.formatUtcDateTime(stat.getDateTimeOfMeasurement());
         String expected = "2018-02-19T00:15:00 UTC";
-        Assert.assertEquals("Check your date, fool!", expected, actual);
+        assertEquals(expected, actual, "Check your date, fool!");
     }
 
     /** Method to test compareTo() method */
@@ -191,8 +189,8 @@ public class StatMeasurementTest
         StatMeasurement stat2 = new StatMeasurement(65, date, stationId, paramId, statType);
         StatMeasurement stat3 = new StatMeasurement(23, date, stationId, paramId, statType);
 
-        Assert.assertEquals("Incorrect int returned", 1, stat.compareTo(stat3));
-        Assert.assertEquals("Incorrect int returned", -1, stat.compareTo(stat2));
-        Assert.assertEquals("Incorrect int returned", 0, stat.compareTo(stat));
+        assertEquals(1, stat.compareTo(stat3), "Incorrect int returned");
+        assertEquals(-1, stat.compareTo(stat2), "Incorrect int returned");
+        assertEquals(0, stat.compareTo(stat), "Incorrect int returned");
     }
 }
